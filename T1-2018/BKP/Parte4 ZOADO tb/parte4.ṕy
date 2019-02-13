@@ -1,0 +1,92 @@
+import matplotlib.pyplot as plt
+import os, sys
+import pandas as pd
+import numpy as np
+from mapFeature import mapFeature
+from costFunctionReg import costFunctionReg
+from plotDecisionBoundary import plotDecisionBoundary
+from costFunctionReg import computeCost
+
+def lerDados():
+    #carrega os dados do arquivo
+    data = pd.read_csv('ex2data2.txt', header = None ,names=['Test 1', 'Test 2', 'Resultado'])
+
+    #separa o dataset em dois: X com duas colunas e y com uma
+    cols = data.shape[1]
+    X = data.iloc[:,0:cols-1]
+    y = data.iloc[:,cols-1:cols]
+
+    #converte os datasets em arrays
+    X = np.array(X.values)
+    y = np.array(y.values)
+
+    #Retorna as duas arrays e tambÃ©m o conjunto de dados obtido do arquivo, com cabeÃ§alhos
+    return(X, y, data)
+
+
+def imprimirScatterPlot():
+    # Lê os dados do arquivo
+    X, y, data = lerDados()
+
+    #Separa os dados obtidos do arquivo em 2 conjuntos (dataframes),
+    # de acordo com o conteÃºdo da coluna "Resultado".
+    positivo = data[data['Resultado'].isin([1])]
+    negativo = data[data['Resultado'].isin([0])]
+
+    #Plota o grÃ¡fico de dispersÃ£o conforme o item 4.1 do enunciado.
+    fig = plt.figure()
+    ax = fig.subplots()
+    ax.axis([-1, 1.5, -1, 1.5])
+    ax.scatter(positivo['Test 1'], positivo['Test 2'], s=50, c='k', marker='+', label='y=1')
+    ax.scatter(negativo['Test 1'], negativo['Test 2'], s=50, c='y', marker='o', label='y=0')
+    ax.legend()
+    ax.set_xlabel('Microchip Test 1')
+    ax.set_ylabel('Microchip Test 2')
+    #fig.savefig('plot4.1.png')
+    plt.show()
+
+    return()
+'''
+def otimizarTheta(theta, X, y, lbd):
+    import scipy.optimize as opt
+    # Calcula os valores ótimos para theta
+    result = opt.fmin_tnc(costFunctionReg, args=(X, y, lbd), x0=theta, disp=None, maxfun=5000)
+    theta_otimizado = np.array(result[0])
+    print(result)
+    return theta_otimizado
+'''
+
+def optimizeRegularizedTheta(theta, X, y, lbd):
+    from scipy import optimize
+    result = optimize.minimize(computeCost, theta, args=(X, y, lbd),  method='BFGS', options={"maxiter":500, "disp":True} )
+    return np.array([result.x]), result.fun
+    ##theta, mincost = optimizeRegularizedTheta(initial_theta,mappedX,y)
+
+#Imprime o gráfico, conforme item 4.1 do enunciado
+#imprimirScatterPlot()
+
+#Mapeamento de características, conforme item 4.2 do enunciado
+X, y, dados = lerDados()
+#print("X agora possui esse tamanho: ", np.shape(mapFeature(X[:,0],X[:,1])))
+#print(" ")
+
+#Calcula o custo e o gradiente, conforme item 4.3 do enunciado
+Xmap = mapFeature(X[:,0],X[:,1])
+theta = np.ones(28)
+lbd = 10
+custo, grad = costFunctionReg(theta, Xmap, y, lbd)
+print("Valor do custo: ",custo)
+#print("Obtido com lambda = ", lbd, " e theta = ", theta)
+#print(" ")
+
+#Cálculo dos valores ótimos de theta, segunda parte do item 4.3.
+theta_ot, custo = optimizeRegularizedTheta(theta, Xmap, y, lbd)
+#good# theta_ot = otimizarTheta(theta, Xmap, y, lbd)
+#print("Valores otimizados de theta: ", theta_ot)
+#custo, grad = costFunctionReg(theta_ot, Xmap, y, lbd)
+#print("Valor do custo: ",custo)
+#print("Obtidos com lambda = ", lbd)
+#print(" ")
+
+# Impressão do esboço da fronteira de decisão
+plotDecisionBoundary(X, y, dados, theta_ot)
